@@ -8,7 +8,8 @@ import {
   Blocks, 
   ChevronDown,
   ChevronUp,
-  History
+  History,
+  User
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -104,6 +105,13 @@ const Sidebar = () => {
           label="History" 
           active={isActive('/history')}
           onClick={() => navigate('/history')}
+        />
+
+        <SidebarItem 
+          icon={User} 
+          label="Profile" 
+          active={isActive('/profile')}
+          onClick={() => navigate('/profile')}
         />
       </nav>
 

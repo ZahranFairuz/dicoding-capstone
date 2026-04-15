@@ -6,4 +6,8 @@ export class IAuthRepository {
   login(email, password) {
     throw new Error("Method 'login()' must be implemented.");
   }
+
+  getProfile() {
+    throw new Error("Method 'getProfile()' must be implemented.");
+  }
 }

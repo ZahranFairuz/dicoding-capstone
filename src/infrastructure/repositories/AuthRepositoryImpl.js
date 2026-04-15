@@ -2,9 +2,10 @@ import { User } from '../../domain/entities/User';
 import { IAuthRepository } from '../../domain/repositories/IAuthRepository';
 
 export class AuthRepositoryImpl extends IAuthRepository {
-  constructor(baseUrl) {
+  constructor(baseUrl, token = null) {
     super();
     this.baseUrl = baseUrl;
+    this.token = token;
   }
 
   async register(username, email, password) {
@@ -55,6 +56,33 @@ export class AuthRepositoryImpl extends IAuthRepository {
         token: data.token,
         user: new User(data.user)
       };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getProfile() {
+    if (!this.token) {
+      throw new Error('Authentication token is required');
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}/api/users/profile`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch profile');
+      }
+
+      // Map API response to Domain Entity
+      return new User(data.user);
     } catch (error) {
       throw error;
     }

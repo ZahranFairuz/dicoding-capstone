@@ -10,6 +10,7 @@ import Wishlist from './pages/Wishlist';
 import Transaction from './pages/Transaction';
 import Analysis from './pages/Analysis';
 import Category from './pages/Category';
+import Profile from './pages/Profile';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -28,6 +29,7 @@ function App() {
           <Route path="/transaction" element={<ProtectedRoute><Transaction /></ProtectedRoute>} />
           <Route path="/analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
           <Route path="/category" element={<ProtectedRoute><Category /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthProvider>
