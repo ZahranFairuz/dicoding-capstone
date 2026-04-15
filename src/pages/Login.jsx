@@ -2,17 +2,62 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { LoginUser } from '../application/use-cases/LoginUser';
+import { AuthRepositoryImpl } from '../infrastructure/repositories/AuthRepositoryImpl';
+import { useAuth } from '../contexts/AuthContext';
+import CONFIG from '../config';
 
 const Login = () => {
   const loginHero = '/assets/backgroynd_login.png';
   const [showPassword, setShowPassword] = React.useState(false);
   const [rememberMe, setRememberMe] = React.useState(false);
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleSignIn = (e) => {
+  // Initialize use case
+  const authRepository = new AuthRepositoryImpl(CONFIG.API_BASE_URL);
+  const loginUserUseCase = new LoginUser(authRepository);
+
+  const handleSignIn = async (e) => {
     e.preventDefault();
-    navigate('/dashboard');
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const result = await loginUserUseCase.execute(email, password);
+      
+      // Use AuthContext to login
+      login(result.user, result.token);
+      
+      // Store remember me preference if checked
+      if (rememberMe) {
+        localStorage.setItem('remember_email', email);
+      } else {
+        localStorage.removeItem('remember_email');
+      }
+
+      // Redirect to dashboard
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message || 'Login failed. Please try again.');
+      console.error('Login error:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  // Load remembered email on mount
+  React.useEffect(() => {
+    const rememberedEmail = localStorage.getItem('remember_email');
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white">
@@ -21,7 +66,7 @@ const Login = () => {
         {/* Subtle Decorative Background Element (matching the image's lighter blue area) */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_0%,transparent_70%)]" />
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
@@ -29,13 +74,13 @@ const Login = () => {
         >
           {/* Main Illustration Area */}
           <div className="relative w-full aspect-square flex items-center justify-center">
-             <img 
-               src={loginHero} 
-               alt="Login Illustration" 
-               className="w-full h-full object-contain drop-shadow-2xl"
-             />
+            <img
+              src={loginHero}
+              alt="Login Illustration"
+              className="w-full h-full object-contain drop-shadow-2xl"
+            />
           </div>
-          
+
           <p className="text-white text-2xl md:text-3xl font-medium text-center leading-normal max-w-md">
             "Access your account and manage everything with ease."
           </p>
@@ -44,7 +89,7 @@ const Login = () => {
 
       {/* Right Side: Form Content */}
       <div className="md:w-1/2 flex items-center justify-center p-8 md:p-16 lg:p-24 bg-white">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -60,13 +105,27 @@ const Login = () => {
             </p>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full mb-6 p-4 bg-red-50 border border-red-200 rounded-lg"
+            >
+              <p className="text-red-600 text-sm font-medium">{error}</p>
+            </motion.div>
+          )}
+
           <form onSubmit={handleSignIn} className="w-full space-y-7">
             <div className="space-y-2.5">
               <label className="text-sm font-bold text-[#374151] ml-1">Email</label>
-              <input 
-                type="email" 
+              <input
+                type="email"
                 placeholder="Enter Email"
-                className="w-full px-6 py-4 rounded-xl border border-[#e5e7eb] focus:border-[#2b59ac] focus:ring-4 focus:ring-[#2b59ac]/5 outline-none transition-all placeholder:text-[#9ca3af] text-lg"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
+                className="w-full px-6 py-4 rounded-xl border border-[#e5e7eb] focus:border-[#2b59ac] focus:ring-4 focus:ring-[#2b59ac]/5 outline-none transition-all placeholder:text-[#9ca3af] text-lg disabled:bg-gray-50"
                 required
               />
             </div>
@@ -74,16 +133,20 @@ const Login = () => {
             <div className="space-y-2.5 relative">
               <label className="text-sm font-bold text-[#374151] ml-1">Password</label>
               <div className="relative">
-                <input 
-                  type={showPassword ? 'text' : 'password'} 
+                <input
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="Enter Password"
-                  className="w-full px-6 py-4 rounded-xl border border-[#e5e7eb] focus:border-[#2b59ac] focus:ring-4 focus:ring-[#2b59ac]/5 outline-none transition-all placeholder:text-[#9ca3af] text-lg pr-14"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
+                  className="w-full px-6 py-4 rounded-xl border border-[#e5e7eb] focus:border-[#2b59ac] focus:ring-4 focus:ring-[#2b59ac]/5 outline-none transition-all placeholder:text-[#9ca3af] text-lg pr-14 disabled:bg-gray-50"
                   required
                 />
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#4b5563] transition-colors"
+                  disabled={isLoading}
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#4b5563] transition-colors disabled:opacity-50"
                 >
                   {showPassword ? <EyeOff size={22} /> : <Eye size={22} />}
                 </button>
@@ -92,11 +155,12 @@ const Login = () => {
 
             <div className="flex items-center justify-between px-1">
               <label className="flex items-center gap-2.5 cursor-pointer group">
-                <input 
-                  type="checkbox" 
-                  className="hidden" 
+                <input
+                  type="checkbox"
+                  className="hidden"
                   checked={rememberMe}
                   onChange={() => setRememberMe(!rememberMe)}
+                  disabled={isLoading}
                 />
                 <div className={`w-5 h-5 rounded border ${rememberMe ? 'bg-[#2b59ac] border-[#2b59ac]' : 'bg-white border-[#d1d5db]'} flex items-center justify-center transition-all`}>
                   {rememberMe && <Check size={14} className="text-white stroke-[3]" />}
@@ -109,11 +173,12 @@ const Login = () => {
               </a>
             </div>
 
-            <button 
+            <button
               type="submit"
-              className="w-full bg-[#1d4ed8] text-white py-4.5 rounded-xl font-bold text-lg hover:bg-[#1e40af] hover:shadow-2xl hover:shadow-blue-600/20 transition-all active:scale-[0.99] mt-4"
+              disabled={isLoading}
+              className="w-full bg-[#1d4ed8] text-white py-4.5 rounded-xl font-bold text-lg hover:bg-[#1e40af] hover:shadow-2xl hover:shadow-blue-600/20 transition-all active:scale-[0.99] mt-4 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              Sign In
+              {isLoading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
 

@@ -1,7 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Check, User, Mail, Lock } from 'lucide-react';
+import { Eye, EyeOff, Check, User as UserIcon, Mail, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { AuthRepositoryImpl } from '../infrastructure/repositories/AuthRepositoryImpl';
+import { RegisterUser } from '../application/use-cases/RegisterUser';
+import CONFIG from '../config';
 
 const Register = () => {
   const loginHero = '/assets/backgroynd_login.png';
@@ -9,10 +12,42 @@ const Register = () => {
   const [agree, setAgree] = React.useState(false);
   const navigate = useNavigate();
 
-  const handleSignUp = (e) => {
+  const [formData, setFormData] = React.useState({
+    username: '',
+    email: '',
+    password: ''
+  });
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState(null);
+
+  const handleSignUp = async (e) => {
     e.preventDefault();
-    // Simulate register
-    navigate('/login');
+    setLoading(true);
+    setError(null);
+
+    const authRepository = new AuthRepositoryImpl(CONFIG.API_BASE_URL);
+    const registerUseCase = new RegisterUser(authRepository);
+
+    try {
+      const result = await registerUseCase.execute(
+        formData.username,
+        formData.email,
+        formData.password
+      );
+
+      console.log('Registration result:', result);
+      // Success - Navigate to login
+      navigate('/login');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -21,20 +56,20 @@ const Register = () => {
       <div className="md:w-1/2 bg-gradient-to-br from-[#1e4db7] to-[#0a1f5c] p-12 flex flex-col items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_0%,transparent_70%)]" />
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
           className="relative z-10 w-full max-w-lg flex flex-col items-center gap-12"
         >
           <div className="relative w-full aspect-square flex items-center justify-center">
-             <img 
-               src={loginHero} 
-               alt="Register Illustration" 
-               className="w-full h-full object-contain drop-shadow-2xl"
-             />
+            <img
+              src={loginHero}
+              alt="Register Illustration"
+              className="w-full h-full object-contain drop-shadow-2xl"
+            />
           </div>
-          
+
           <p className="text-white text-2xl md:text-3xl font-medium text-center leading-normal max-w-md">
             "Access your account and manage everything with ease."
           </p>
@@ -43,7 +78,7 @@ const Register = () => {
 
       {/* Right Side: Register Form */}
       <div className="md:w-1/2 flex items-center justify-center p-8 md:p-16 lg:p-24 bg-white">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -58,12 +93,25 @@ const Register = () => {
             </p>
           </div>
 
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="w-full mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-medium"
+            >
+              {error}
+            </motion.div>
+          )}
+
           <form onSubmit={handleSignUp} className="w-full space-y-6">
             {/* Username Field */}
             <div className="space-y-2">
               <label className="text-sm font-bold text-[#374151] ml-1">Username</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleInputChange}
                 placeholder="Enter Username"
                 className="w-full px-6 py-4 rounded-xl border border-[#e5e7eb] focus:border-[#2b59ac] focus:ring-4 focus:ring-[#2b59ac]/5 outline-none transition-all placeholder:text-[#9ca3af] text-lg"
                 required
@@ -73,8 +121,11 @@ const Register = () => {
             {/* Email Field */}
             <div className="space-y-2">
               <label className="text-sm font-bold text-[#374151] ml-1">Email</label>
-              <input 
-                type="email" 
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
                 placeholder="Enter Email"
                 className="w-full px-6 py-4 rounded-xl border border-[#e5e7eb] focus:border-[#2b59ac] focus:ring-4 focus:ring-[#2b59ac]/5 outline-none transition-all placeholder:text-[#9ca3af] text-lg"
                 required
@@ -85,13 +136,16 @@ const Register = () => {
             <div className="space-y-2 relative">
               <label className="text-sm font-bold text-[#374151] ml-1">Password</label>
               <div className="relative">
-                <input 
-                  type={showPassword ? 'text' : 'password'} 
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
                   placeholder="Enter Password"
                   className="w-full px-6 py-4 rounded-xl border border-[#e5e7eb] focus:border-[#2b59ac] focus:ring-4 focus:ring-[#2b59ac]/5 outline-none transition-all placeholder:text-[#9ca3af] text-lg pr-14"
                   required
                 />
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-5 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#4b5563] transition-colors"
@@ -103,12 +157,11 @@ const Register = () => {
 
             <div className="flex items-center justify-between px-1">
               <label className="flex items-center gap-2.5 cursor-pointer group">
-                <input 
-                  type="checkbox" 
-                  className="hidden" 
+                <input
+                  type="checkbox"
+                  className="hidden"
                   checked={agree}
                   onChange={() => setAgree(!agree)}
-                  required
                 />
                 <div className={`w-5 h-5 rounded border ${agree ? 'bg-[#2b59ac] border-[#2b59ac]' : 'bg-white border-[#d1d5db]'} flex items-center justify-center transition-all`}>
                   {agree && <Check size={14} className="text-white stroke-[3]" />}
@@ -121,17 +174,19 @@ const Register = () => {
               </a>
             </div>
 
-            <button 
+            <button
               type="submit"
-              className="w-full bg-[#1d4ed8] text-white py-4.5 rounded-xl font-bold text-lg hover:bg-[#1e40af] hover:shadow-2xl hover:shadow-blue-600/20 transition-all active:scale-[0.99] mt-4"
+              disabled={loading}
+              className={`w-full ${loading ? 'opacity-70 cursor-not-allowed' : ''} bg-[#1d4ed8] text-white py-4.5 rounded-xl font-bold text-lg hover:bg-[#1e40af] hover:shadow-2xl hover:shadow-blue-600/20 transition-all active:scale-[0.99] mt-4`}
             >
-              Sign Up
+              {loading ? 'Processing...' : 'Sign Up'}
             </button>
           </form>
 
           <p className="mt-12 text-center text-[#4b5563] text-lg">
             You have account? <a onClick={() => navigate('/login')} className="text-[#3b82f6] font-bold hover:underline ml-1 cursor-pointer">Sign In</a>
           </p>
+
         </motion.div>
       </div>
     </div>

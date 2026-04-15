@@ -10,23 +10,27 @@ import Wishlist from './pages/Wishlist';
 import Transaction from './pages/Transaction';
 import Analysis from './pages/Analysis';
 import Category from './pages/Category';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/finance/savings" element={<Savings />} />
-        <Route path="/finance/history" element={<History />} />
-        <Route path="/history" element={<HistoryPage />} />
-        <Route path="/wishlist" element={<Wishlist />} />
-        <Route path="/transaction" element={<Transaction />} />
-        <Route path="/analysis" element={<Analysis />} />
-        <Route path="/category" element={<Category />} />
-        <Route path="/" element={<Navigate to="/login" replace />} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/finance/savings" element={<ProtectedRoute><Savings /></ProtectedRoute>} />
+          <Route path="/finance/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+          <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
+          <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
+          <Route path="/transaction" element={<ProtectedRoute><Transaction /></ProtectedRoute>} />
+          <Route path="/analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
+          <Route path="/category" element={<ProtectedRoute><Category /></ProtectedRoute>} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </AuthProvider>
     </Router>
   );
 }
